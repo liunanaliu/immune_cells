@@ -1,6 +1,11 @@
 see reference of An immune-cell signature of bacterial sepsis
 https://pubmed.ncbi.nlm.nih.gov/32066974/
-SCP548
+SCP548 https://github.com/reyes-m/sepsis_signature 
+https://keita-iida.github.io/ASURATBI/04-pbmc130k.html#reduce-dimensions-of-sign-by-sample-matrices
+library(ASURAT) 
+
+Multi-Organ Transcriptome Dynamics in a Mouse Model of Cecal Ligation and Puncture-Induced Polymicrobial Sepsis
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8184233/
 
 
 Key Signature Genes of Early Terminal Granulocytic Differentiation Distinguish 
