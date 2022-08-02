@@ -97,7 +97,83 @@ p <- ggboxplot(GSE185263_cxc2,
                palette = "npg")
 p
 
+##same for the other cxc genes
 
+p <- ggboxplot(GSE185263_cxc2,
+               'disease state:ch1', 
+               'CXCR2',
+               color = 'in hospital mortality:ch1',
+               #legend = "none",
+               xlab = 'Condition',
+               ylab = 'CXCR2 in whole blood',
+               add = "point",
+               palette = "npg")
+p
+
+GSE185263_cxc2$Condition <- str_c(GSE185263_cxc2$`disease state:ch1`,
+      GSE185263_cxc2$`in hospital mortality:ch1`,
+      sep = '_')
+table(GSE185263_cxc2$Condition)
+
+method1 <- "anova" # one of "anova" or "kruskal.test"
+method2 <- "t.test" # one of "wilcox.test" or "t.test"
+my_comparisons <- list(c("healthy_NA", "sepsis_Died"), 
+                       c("healthy_NA", "sepsis_NA"),
+                       c("healthy_NA", "sepsis_Survived"),
+                       c("sepsis_Died", "sepsis_NA"),
+                       c("sepsis_Died", "sepsis_Survived"),
+                       c("sepsis_NA", "sepsis_Survived")) 
+
+x <- which(names(GSE185263_cxc2) == "Condition") # name of grouping variable
+y <- which(names(GSE185263_cxc2) == "GAPDH" # names of variables to test
+           | names(GSE185263_cxc2) == "CXCL8" |
+             names(GSE185263_cxc2) == "CXCR1" |
+             names(GSE185263_cxc2) == "CXCR2")
+
+library(ggplot2)
+library(ggpubr)
+for (i in y) {
+  for (j in x) {
+    p <- ggboxplot(GSE185263_cxc2,
+                   x = colnames(GSE185263_cxc2[j]), 
+                   y = colnames(GSE185263_cxc2[i]),
+                   color = colnames(GSE185263_cxc2[j]),
+                   legend = "none",
+                   palette = "npg",
+                   add = "jitter"
+    )
+    print(
+      p + stat_compare_means(aes(label = paste0(..method.., 
+                                                ", p-value = ",
+                                                ..p.format..)),
+                             method = method1, 
+                             label.y = max(GSE185263_cxc2[, i], 
+                                           na.rm = TRUE)
+      )
+      + stat_compare_means(comparisons = my_comparisons, 
+                           method = method2, 
+                           label = "p.format") # remove if p-value of ANOVA or Kruskal-Wallis test >= alpha
+    )
+  }
+}
+
+
+GSE185263_cxc3 <- gather(GSE185263_cxc2[,-(1:7)],
+                        'Gene','Expression' ,-"Condition")
+View(GSE185263_cxc3)
+table(GSE185263_cxc3$Gene)
+GSE185263_cxc3$Gene <- factor(GSE185263_cxc3$Gene,
+                             levels = c("GAPDH","CXCL8",
+                                        "CXCR1","CXCR2"))
+p <- ggboxplot(GSE185263_cxc3,
+               "Condition", 
+               'Expression',
+               color = 'Gene',
+               #legend = "none",
+               palette = "npg",
+               add = "point"
+)
+p
 
 
 
