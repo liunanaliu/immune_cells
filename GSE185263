@@ -6,7 +6,96 @@ have 3 conditions including died, survived, and NA (also included healthy)
 
 have two diseases, includinng sepsis and healthy
 
+setwd("~/Desktop/GSE185263")
+GSE185263_raw_counts <- read.csv("~/Desktop/GSE185263/GSE185263_raw_counts.csv", 
+                                 row.names=1)
+rownames(GSE185263_raw_counts)
 
+gse <- getGEO(GEO = 'GSE185263', 
+              GSEMatrix =TRUE)
+
+metadata <- pData(phenoData(gse[[1]]))
+head(metadata)
+
+metadata.modified <- metadata %>%
+  select(1,46,49:53) 
+
+sum(is.na(metadata.modified))
+#0
+save(metadata.modified,file = 'metadata.modified.rda')
+gse
+#change ensembl id to symbol
+library(clusterProfiler)
+library(org.Hs.eg.db) #for Human
+library(org.Mm.eg.db)#fr mouse
+rownames(GSE185263_raw_counts)
+gene.df <- bitr(row.names(GSE185263_raw_counts), 
+                fromType = "ENSEMBL", # 从SYMBOL到ENSEMBL和ENTREZID,得到新命名的gene.df
+                toType = c("SYMBOL","ENTREZID"),
+                OrgDb = org.Hs.eg.db) #小鼠换成org.Mm.eg.db
+head(gene.df)
+feature.data <- gene.df[,c(1,2)]
+
+keep <- sum(rowSums(GSE185263_raw_counts)>0)
+GSE185263_raw_counts <- GSE185263_raw_counts[rowSums(GSE185263_raw_counts)>0,]
+#from 58389 to 43406, 14983 were excluded
+feature.data <- feature.data[feature.data$SYMBOL !="",]
+GSE185263_raw_counts <- GSE185263_raw_counts[feature.data$ENSEMBL,]
+#from 43406 to 28017
+feature.data$median <- apply(GSE185263_raw_counts,1,median)
+feature.data <- feature.data[order(feature.data$SYMBOL,
+                                   feature.data$median,
+                                   decreasing = T),]
+
+
+feature.data <- feature.data[!duplicated(feature.data$SYMBOL),]
+#from 28017 to 27941
+GSE185263_raw_counts <- GSE185263_raw_counts[feature.data$ENSEMBL,]
+#from 28017 to 27941
+rownames(GSE185263_raw_counts) <- feature.data$SYMBOL
+save(GSE185263_raw_counts,file = "GSE185263_raw_counts.rda")
+
+GSE185263_raw_counts2 <- data.frame(t(GSE185263_raw_counts))
+colnames(GSE185263_raw_counts2)
+
+(rownames(GSE185263_raw_counts2)==(metadata.modified$title))
+#t
+rownames(GSE185263_raw_counts2) <- metadata$geo_accession
+#optimal
+GSE185263_raw_counts3 <- cbind(metadata.modified,
+                               GSE185263_raw_counts2)
+GSE185263_raw_counts3[1:4,1:8]
+save(GSE185263_raw_counts3,
+     file = "GSE185263_raw_counts3.rda")
+GSE185263_raw_counts3$CXCL8
+GSE185263_raw_counts3$CXCR2
+GSE185263_raw_counts3$CXCR1
+GSE185263_raw_counts3$GAPDH
+GSE185263_raw_counts3[1:4,1:8]
+GSE185263_cxc <- GSE185263_raw_counts3[,c("title","age:ch1","disease state:ch1",
+                             "in hospital mortality:ch1","Sex:ch1",
+                             "sofa 24h post admisssion:ch1",'tissue:ch1',
+                             "GAPDH","CXCL8","CXCR1","CXCR2")]
+
+save(GSE185263_cxc,file = "GSE185263_cxc.rda")
+table(GSE185263_cxc$`disease state:ch1`)
+table(GSE185263_cxc$`in hospital mortality:ch1`)
+table(GSE185263_cxc$`Sex:ch1`)
+
+library(edgeR)
+GSE185263_cxc2 <- log2(edgeR::cpm(GSE185263_cxc[,-(1:7)])+1)
+GSE185263_cxc2 <- cbind(GSE185263_cxc[,1:7],GSE185263_cxc2)
+
+p <- ggboxplot(GSE185263_cxc2,
+               'disease state:ch1', 
+               'CXCL8',
+               #color = 'in hospital mortality:ch1',
+               #legend = "none",
+               xlab = 'Condition',
+               ylab = 'CXCL8 in whole blood',
+               add = "point",
+               palette = "npg")
+p
 
 
 
