@@ -1,0 +1,6 @@
+#https://mp.weixin.qq.com/s/0fjnVvlvfb8BhlqfPG34VQ 
+#https://www.yuque.com/xiaojiewanglezenmofenshen/bsgk2d/rhrbqu
+We calculate now GSV A enrichment scores for these gene sets using first the microarray data and then the RNA-seq integer count data. 
+Note that the only requirement to do the latter is to set the argument kcdf=“Poisson” which is “Gaussian” by default. 
+Note, however, that if our RNA-seq derived expression levels would be continous, such as log-CPMs, log-RPKMs or log-TPMs, 
+the the default value of the kcdf argument should remain unchanged.
