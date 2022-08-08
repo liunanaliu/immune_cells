@@ -4,3 +4,66 @@ We calculate now GSV A enrichment scores for these gene sets using first the mic
 Note that the only requirement to do the latter is to set the argument kcdf=“Poisson” which is “Gaussian” by default. 
 Note, however, that if our RNA-seq derived expression levels would be continous, such as log-CPMs, log-RPKMs or log-TPMs, 
 the the default value of the kcdf argument should remain unchanged.
+
+#https://mp.weixin.qq.com/s/0fjnVvlvfb8BhlqfPG34VQ
+library(GSVA)
+setwd("~/Downloads")
+if(!require(tinyarray))devtools::install_github("xjsun1221/tinyarray")
+library(tinyarray)
+es = geo_download("GSE42872")
+
+#library(XVector)
+devtools::install_github("JhuangLab/ngstk")
+library(ngstk)
+split_list(es)
+#no idea where it comes
+es$exp <- log2(es$exp+1)
+find_anno(es$gpl)
+#exp = log2(exp+1)
+
+library(AnnotationDbi)
+library(AnnoProbe)
+gpl <- "GPL6244"
+ids = idmap(gpl)
+
+ids = ids[!duplicated(ids$symbol),]
+es$exp = trans_array(es$exp,ids)
+es$exp[1:4,1:4]
+
+
+library(stringr)
+library(limma)
+es$pd$title
+
+Group = ifelse(str_detect(es$pd$title,
+                          "Control"),
+               "control","treat")
+Group = factor(Group,
+               levels = c("control","treat"))
+table(Group)
+
+library(rio)
+geneset = rio::import("mmc3.xlsx",skip = 2)
+table(geneset$`Cell type`)
+table(geneset$Immunity)
+geneset = split(geneset$Metagene,
+                geneset$`Cell type`)
+lapply(geneset[1:3], head)
+
+library(GSVA)
+re <- gsva(es$exp, geneset, 
+           method="ssgsea",
+           mx.diff=FALSE, 
+           verbose=FALSE)
+
+library(pheatmap)
+re2 <- as.data.frame(re)
+
+an = data.frame(group = Group,
+                row.names = colnames(es$exp))
+pheatmap(re2,scale = "row",
+         show_colnames = F,
+         annotation_col = an,
+         color = colorRampPalette(c("navy", 
+                                    "white", 
+                                    "firebrick3"))(100))
