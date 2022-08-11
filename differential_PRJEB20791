@@ -1,0 +1,142 @@
+load("/media/l33/NANALIU026/PRJEB20791/4salmon/5quant/rawcount2_0728.rda")
+rawcount2[1:4,1:4]
+colnames(rawcount2)
+rawcount.3 <- data.frame(t(rawcount2))
+rawcount.3[4:8,1:4]
+colnames(rawcount.3)
+rownames(rawcount.3)
+rawcount.3$ERR1981150
+##########
+rawcount2.1 <- rawcount2[,-c(1:3)]
+length(rawcount2.1)
+#21653
+length(rawcount2.1[rowSums(rawcount2.1)>0,])
+###########
+rawcount2.1t <- data.frame(t(rawcount2.1))
+head(rawcount2.1t)
+boxplot(rawcount2.1t,
+        outline = F,
+        notch = T)
+
+library(limma)
+rawcount2.1tn<- normalizeBetweenArrays(rawcount2.1t)
+boxplot(rawcount2.1tn,
+        outline = F,
+        notch = T)
+head(rawcount2.1tn)
+################
+ex <- rawcount2.1tn
+qx <- as.numeric(quantile(ex, 
+                          c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm=T))
+LogC <- (qx[5] > 100) ||
+  (qx[6]-qx[1] > 50 && qx[2] > 0) ||
+  (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
+
+if (LogC) { ex[which(ex <= 0)] <- NaN
+exprSet <- log2(ex)
+print("log2 transform finished")}else{print("log2 transform not needed")}
+##########
+exprSet[1:4,1:4]
+#this is the transformed log2 expression 
+colnames(exprSet)
+#samples
+rownames(exprSet)
+#genes
+sum(duplicated(rownames(exprSet)))
+#0
+group.list <- rawcount2[,3]
+group.list
+#all for the liver
+group.list <- factor(group.list,
+                     levels = c("6H","12H","24H"))
+design <- model.matrix(~0+group.list)
+design
+#colnames(design) <- levels(group.list)
+colnames(design) <- c('CLP6h','CLP12h','CLP24h')
+contrast.matrix <- makeContrasts(CLP12h - CLP6h,
+                                 CLP24h - CLP6h,
+                                 CLP24h - CLP12h,
+                                 levels=design)
+contrast.matrix
+################################
+fit <- lmFit(exprSet,design)
+#Partial NA coefficients for 4558 probe(s) 
+fit2 <- contrasts.fit(fit,contrast.matrix)
+fit2 <- eBayes(fit2)
+###########################
+alldiff1 <- topTable(fit2,adjust.method = 'fdr',
+                     coef = 1,number = Inf)
+#for CLP12h - CLP6h,
+alldiff2 <- topTable(fit2,adjust.method = 'fdr',
+                     coef = 2,number = Inf)
+#for  CLP24h - CLP6h,
+alldiff3 <- topTable(fit2,adjust.method = 'fdr',
+                     coef = 3,number = Inf)
+#for CLP24h - CLP12h,
+head(alldiff1)
+head(alldiff2)
+head(alldiff3)
+sum(rownames(alldiff1)==rownames(alldiff2))
+#not for all the same
+alldiff1$comparision <- '12hVS6h'
+sum(is.na(alldiff1))
+#20180
+alldiff1 <- na.omit(alldiff1)
+#
+alldiff1['Cxcr2',]
+
+alldiff2$comparision <- '24hVS6h'
+sum(is.na(alldiff2))
+#19530
+alldiff2 <- na.omit(alldiff2)
+alldiff2['Cxcr2',]
+
+alldiff3$comparision <- '24hVS12h'
+sum(is.na(alldiff3))
+#19435
+alldiff3 <- na.omit(alldiff3)
+alldiff3['Cxcr2',]
+
+str(alldiff1)
+#4036
+str(alldiff2)
+#3906
+str(alldiff3)
+#3887
+###############################
+data_plot <- as.data.frame(t(exprSet))
+data_plot[,1:4]
+rawcount2[,1:4]
+group.list
+data_plot <- data.frame(group=group.list,
+                        data_plot,
+                        stringsAsFactors = F)
+data_plot$Cxcr2
+data_plot$Cxcl1
+data_plot$Cxcl2
+
+##########################
+library(ggplot2)
+setwd("/media/l33/NANALIU026/PRJEB20791/4salmon/5quant")
+
+ggplot(data_plot, aes(group,Cxcr2,fill=group)) +
+  geom_jitter(aes(colour=group), size=2, alpha=0.5)+
+  xlab("Time after CLP") +
+  ylab(paste("Liver expression of ","Cxcr2"))+
+  theme_classic()+
+  theme(legend.position = "none")
+ggsave('cxcr2_1.tiff',units="in", 
+       width=5, height=4, 
+       dpi=300, compression = 'lzw')
+
+ggplot(data_plot, aes(group,Cxcr2,fill=group)) +
+  geom_boxplot() +
+  geom_point(size=2, alpha=0.5) +
+  #geom_line(aes(group=pairinfo), colour="black", linetype="11") + ##no pair information
+  xlab("Time after CLP") +
+  ylab(paste("Liver expression of ","Cxcr2"))+
+  theme_classic()+
+  theme(legend.position = "none")
+ggsave('cxcr2_2.tiff',units="in", 
+       width=5, height=4, 
+       dpi=300, compression = 'lzw')
