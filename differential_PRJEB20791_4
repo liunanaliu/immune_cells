@@ -1,0 +1,68 @@
+library(GSVA)
+library(rio)
+exprSet[1:4,1:4]
+group.list
+geneset <- rio::import('/home/l33/Downloads/mmc3.xlsx',skip=2)
+geneset <- split(geneset$Metagene,
+                 geneset$`Cell type`)
+lapply(geneset[1:3],head)
+re1 <- gsva(exprSet,geneset,
+            method='ssgsea',
+            mx.diff=F,
+            verbose=F)
+library(pheatmap)
+re1.1 <- as.data.frame(re1)
+an1 <- data.frame(group=group.list,
+                  row.names = colnames(exprSet))
+pheatmap(re1.1,scale = 'row',
+         show_colnames = F,
+         annotation_col = an1,
+         color = colorRampPalette(c("navy", 
+                                    "white", 
+                                    "firebrick3"))(100))
+#Error in hclust(d, method = method) : must have n >= 2 objects to cluster
+#re1 only include type 1 t helper cell
+exprSet1 <- na.omit(exprSet)
+#from 21653 to 11815
+###################################################
+library(msigdbr)
+library(GSVA)
+library(GSEABase)
+kegg.alldf <- msigdbr(species = 'Mus musculus',
+        category = 'C7',subcategory = "IMMUNESIGDB")
+table(kegg.alldf$gs_name)
+colnames(kegg.alldf)
+head(kegg.alldf)
+kegg.alldf[1:4,10:18]
+kegg.list <- split(kegg.alldf$gene_symbol,kegg.alldf$gs_name)
+kegg.list 
+names(kegg.list)
+##
+ssgsea_mat <- gsva(exprSet1, kegg.list,
+                   method='ssgsea',
+                   verbose=T,
+                   parallel.sz=4)
+ssgsea_mat[1:4,1:4]
+head(ssgsea_mat)
+summary(ssgsea_mat)
+dim(ssgsea_mat)
+pheatmap(ssgsea_mat,scale = 'row',
+         show_colnames = F,
+         annotation_col = an1)
+fgsea::fgsea()
+###
+sum(is.na(exprSet))
+sum(is.na(exprSet1))
+dim(exprSet)
+dim(exprSet1)
+#9838 were NAs
+
+
+
+
+
+
+
+
+
+
