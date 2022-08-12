@@ -1,0 +1,219 @@
+length(union(rownames(alldiff1),rownames(alldiff2)))
+#18269
+length(union(rownames(alldiff1),rownames(alldiff3)))
+#18288
+length(union(rownames(alldiff2),rownames(alldiff3)))
+#18418
+###################################
+table(alldiff1$Change)
+cg1 <- rownames(alldiff1)[alldiff1$Change !='Stable']
+length(cg1)
+#
+table(alldiff2$Change)
+cg2 <- rownames(alldiff2)[alldiff2$Change !='Stable']
+length(cg2)
+#
+table(alldiff3$Change)
+cg3 <- rownames(alldiff3)[alldiff3$Change !='Stable']
+length(cg3)
+#
+cg12 <- union(cg1,cg2)
+cg123 <- union(cg12,cg3)
+length(cg123)
+#3358
+length(intersect(cg1,cg2))
+#
+n123 <- t(scale(t(exprSet[cg123,])))
+n123[n123>2]=2
+n123[n123< -2]= -2
+n123[1:4,1:4]
+summary(n123)
+n123 <- na.omit(n123)
+pheatmap(n123,show_colnames =F,
+         show_rownames = F)
+ac=data.frame(group=group.list)
+rownames(ac)=colnames(n123)
+
+p6 <- pheatmap(n123,show_colnames =F,
+               show_rownames = F,
+               cluster_cols = T, 
+               main = 'Distinct time for CLP',
+               annotation_col=ac) 
+p6
+ggsave('heatmap_1.tiff',plot = p6,units="in", 
+       width=5, height=4, 
+       dpi=300, compression = 'lzw')
+
+######choose more predominant differential genes 
+colnames(alldiff1)
+summary(alldiff1)
+cg1.1 <- subset(alldiff1, abs(logFC) >= 2 & P.Value < 0.05)
+table(cg1.1$Change)
+##
+cg2.1 <- subset(alldiff2, abs(logFC) >= 2 & P.Value < 0.05)
+table(cg2.1$Change)
+##
+cg3.1 <- subset(alldiff3, abs(logFC) >= 2 & P.Value < 0.05)
+table(cg3.1$Change)
+##
+rownames(cg1.1)
+cg12.1 <- union(rownames(cg1.1),rownames(cg2.1))
+cg123.1 <- union(cg12.1,rownames(cg3.1))
+##1116
+n123.1 <- t(scale(t(exprSet[cg123.1,])))
+n123.1[n123.1 > 2]=2
+n123.1[n123.1 < -2]= -2
+n123.1[1:4,1:4]
+summary(n123.1)
+n123.1 <- na.omit(n123.1)
+pheatmap(n123.1,show_colnames =F,
+         show_rownames = F)
+ac=data.frame(group=group.list)
+rownames(ac)=colnames(n123.1)
+
+p6 <- pheatmap(n123.1,show_colnames =F,
+               show_rownames = F,
+               cluster_cols = T, 
+               main = 'Distinct time for CLP',
+               annotation_col=ac) 
+p6
+ggsave('heatmap_2.tiff',plot = p6,units="in", 
+       width=5, height=4, 
+       dpi=300, compression = 'lzw')
+
+#####################################
+library(clusterProfiler)
+BiocManager::install("org.Mm.eg.db")
+gene123 <- rownames(n123)
+gene123 <- bitr(gene123,
+                fromType="SYMBOL", 
+                toType="ENTREZID", 
+                OrgDb="org.Mm.eg.db")
+## 7.65% of input gene IDs are fail to map..
+head(gene123)
+de123 <- gene123$ENTREZID
+go123 <- enrichGO(gene = de123,
+                  OrgDb = 'org.Mm.eg.db',
+                  ont = 'all')
+p <- dotplot(go123,split='ONTOLOGY')+
+  facet_grid(ONTOLOGY~., scale="free")
+p
+ggsave('Go_1.tiff',plot = p,units="in", 
+       width=18, height=12, 
+       dpi=300, compression = 'lzw')
+###############################
+egg123 <- enrichKEGG(gene = gene123$ENTREZID,
+                     organism = 'mmu',
+                     pvalueCutoff = 0.05)
+
+p <- dotplot(egg123)
+p
+ggsave('KEGG_1.tiff',plot = p,units="in", 
+       width=8, height=6, 
+       dpi=300, compression = 'lzw')
+egg123.d <- data.frame(egg123)
+head(egg123.d)
+browseKEGG(egg123,'mmu00983')
+browseKEGG(egg123,'mmu01524')
+browseKEGG(egg123,'mmu00480')
+browseKEGG(egg123,'mmu04976')
+browseKEGG(egg123,'mmu04919')
+#open question, how to label actual upregualtion and downregulation genes in this condition
+#############################
+#based on the change of genes, but not for the exact fold change 
+(alldiff1$Genes==rownames(alldiff1))
+#true
+gene1 <- bitr(alldiff1$Genes,
+                fromType="SYMBOL", 
+                toType="ENTREZID", 
+                OrgDb="org.Mm.eg.db")
+#6.74% of input gene IDs are fail to map...
+head(gene1)
+dim(alldiff1)
+#17617
+dim(gene1)
+#16429
+length(setdiff(alldiff1$Genes,gene1$SYMBOL))
+#17617-16429 = 1188
+length(intersect(alldiff1$Genes,gene1$SYMBOL))
+#16429
+library(tidyverse)
+alldiff1.ent <- inner_join(alldiff1,gene1,
+           by=c('Genes'='SYMBOL'))
+head(alldiff1.ent)
+####################
+sum(is.na(alldiff1))
+genelist1 <- alldiff1.ent$logFC
+names(genelist1) <- alldiff1.ent$ENTREZID
+genelist1 <- sort(genelist1,
+                  decreasing = T)
+head(genelist1)
+kk.gse1 <- gseKEGG(geneList = genelist1,
+                   organism = 'mmu',
+                   minGSSize = 10,
+                   pvalueCutoff = 0.9,
+                   verbose = F)
+#There are ties in the preranked stats (0.57% of the list).
+#The order of those tied genes will be arbitrary, which may produce unexpected results.
+kk.gse1
+tmp1 <- kk.gse1@result
+dim(tmp1)
+#192 11
+kk1 <- DOSE::setReadable(kk.gse1,
+                         OrgDb = "org.Mm.eg.db",
+                         keyType="ENTREZID")
+tmp1 <- kk1@result
+dim(tmp1)
+#192 11
+save(kk1,file = 'kk1.rda')
+######################
+down_kk1 <- kk.gse1[tail(order(kk.gse1$enrichmentScore,
+                               decreasing = F)),]
+down_kk1$group=-1
+head(down_kk1)
+##
+up_kk1 <- kk.gse1[head(order(kk.gse1$enrichmentScore,
+                               decreasing = F)),]
+up_kk1$group=1
+head(up_kk1)
+##
+du_kk1 <- rbind(down_kk1,up_kk1)
+#include down and up 
+colnames(du_kk1)
+du_kk1$pvalue <- -log10(du_kk1$pvalue)
+du_kk1$pvalue <- du_kk1$pvalue*du_kk1$group
+#######################
+du_kk1 <- du_kk1[order(du_kk1$pvalue,
+                       decreasing = F),]
+head(du_kk1)
+library(ggplotify)
+library(ggstatsplot)
+p <- ggplot(du_kk1, aes(x=reorder(Description,order(pvalue, decreasing = F)), 
+                        y=pvalue, fill=group)) + 
+  geom_bar(stat="identity") + 
+  scale_fill_gradient(low="#34bfb5",high="#ff6633",guide = FALSE) + 
+  scale_x_discrete(name ="Pathway names") +
+  scale_y_continuous(name ="log10P-value") +
+  coord_flip() + 
+  theme_ggstatsplot()+
+  theme(plot.title = element_text(size = 26,hjust = 0.5), 
+        axis.title = element_text(size = 24,face = 'bold'),
+        axis.text = element_text(size = 22,face = 'bold'),
+        panel.grid = element_blank())+
+  ggtitle("Pathway Enrichment") 
+p
+ggsave('GSEA_1.tiff',plot = p,units="in", 
+       width=18, height=16, 
+       dpi=300, compression = 'lzw')
+#######
+library(enrichplot)
+p <- gseaplot2(kk1, geneSetID = rownames(down_kk1))
+p
+ggsave('GSEA_1down.tiff',plot = p,units="in", 
+       width=8, height=6, 
+       dpi=300, compression = 'lzw')
+p <- gseaplot2(kk1, geneSetID = rownames(up_kk1))
+p
+ggsave('GSEA_1up.tiff',plot = p,units="in", 
+       width=8, height=6, 
+       dpi=300, compression = 'lzw')
