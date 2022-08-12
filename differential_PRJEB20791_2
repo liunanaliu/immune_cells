@@ -1,0 +1,157 @@
+library(pheatmap)
+
+plot(alldiff1$logFC,-log10(alldiff1$P.Value))
+ggsave('alldiff.tiff',units="in", 
+       width=5, height=4, 
+       dpi=300, compression = 'lzw')
+#but no plot, i did not know why
+
+alldiff1$Change=ifelse(alldiff1$P.Value>0.05,'Stable', 
+            ifelse( alldiff1$logFC >1,'Up', 
+                    ifelse( alldiff1$logFC < -1,'Down','Stable') ))
+
+table(alldiff1$Change)
+#down 779 up 838
+save(alldiff1,file = 'alldiff1.rda')
+
+alldiff2$Change=ifelse(alldiff2$P.Value>0.05,'Stable', 
+                       ifelse( alldiff2$logFC >1,'Up', 
+                               ifelse( alldiff2$logFC < -1,'Down','Stable') ))
+
+table(alldiff2$Change)
+#down 846 up 898
+save(alldiff2,file = 'alldiff2.rda')
+
+alldiff3$Change=ifelse(alldiff3$P.Value>0.05,'Stable', 
+                       ifelse( alldiff1$logFC >1,'Up', 
+                               ifelse( alldiff3$logFC < -1,'Down','Stable') ))
+
+table(alldiff3$Change)
+#down 423  up 969
+save(alldiff3,file = 'alldiff3.rda')
+
+alldiff1$Genes <- rownames(alldiff1)
+head(alldiff1)
+logFC_t = 1
+this_tile <- paste0('Differential expression for post-CLP 12h VS 6h',
+                    #'\nCutoff for logFC is ',round(logFC_t,3),
+                    '\nThe number of up gene is ',nrow(alldiff1[alldiff1$Change == 'Up',]) ,
+                    '\nThe number of down gene is ',nrow(alldiff1[alldiff1$Change == 'Down',]))
+
+
+#data_plot[,1:4]
+p5 <- ggplot(data = alldiff1, 
+             aes(x = logFC, 
+                 y = -log10(P.Value))) +
+  geom_point(alpha=0.6, size=1.5, 
+             aes(color=Change)) +
+  ylab("-log10(Pvalue)")+
+  scale_color_manual(values=c("#34bfb5", "#828586","#ff6633"))+
+  geom_vline(xintercept= 0,lty=4,col="grey",lwd=0.8) +
+  xlim(-3, 3)+
+  theme_classic()+
+  ggtitle(this_tile)+
+  theme(plot.title = element_text(size=12,hjust = 0.5),
+        legend.title = element_blank())
+p5
+ggsave('pheatmap1.tiff',units="in", 
+       width=5, height=4, 
+       dpi=300, compression = 'lzw')
+
+alldiff2$Genes <- rownames(alldiff2)
+head(alldiff2)
+logFC_t = 1
+this_tile <- paste0('Differential expression for post-CLP 24h VS 6h',
+                    #'\nCutoff for logFC is ',round(logFC_t,3),
+                    '\nThe number of up gene is ',nrow(alldiff2[alldiff2$Change == 'Up',]) ,
+                    '\nThe number of down gene is ',nrow(alldiff2[alldiff2$Change == 'Down',]))
+
+
+#data_plot[,1:4]
+p5 <- ggplot(data = alldiff2, 
+             aes(x = logFC, 
+                 y = -log10(P.Value))) +
+  geom_point(alpha=0.6, size=1.5, 
+             aes(color=Change)) +
+  ylab("-log10(Pvalue)")+
+  scale_color_manual(values=c("#34bfb5", "#828586","#ff6633"))+
+  geom_vline(xintercept= 0,lty=4,col="grey",lwd=0.8) +
+  xlim(-3, 3)+
+  theme_classic()+
+  ggtitle(this_tile)+
+  theme(plot.title = element_text(size=12,hjust = 0.5),
+        legend.title = element_blank())
+p5
+ggsave('pheatmap2.tiff',units="in", 
+       width=5, height=4, 
+       dpi=300, compression = 'lzw')
+
+alldiff3$Genes <- rownames(alldiff3)
+head(alldiff3)
+logFC_t = 1
+this_tile <- paste0('Differential expression for post-CLP 24h VS12h',
+                    #'\nCutoff for logFC is ',round(logFC_t,3),
+                    '\nThe number of up gene is ',nrow(alldiff3[alldiff3$Change == 'Up',]) ,
+                    '\nThe number of down gene is ',nrow(alldiff3[alldiff3$Change == 'Down',]))
+
+
+#data_plot[,1:4]
+p5 <- ggplot(data = alldiff3, 
+             aes(x = logFC, 
+                 y = -log10(P.Value))) +
+  geom_point(alpha=0.6, size=1.5, 
+             aes(color=Change)) +
+  ylab("-log10(Pvalue)")+
+  scale_color_manual(values=c("#34bfb5", "#828586","#ff6633"))+
+  geom_vline(xintercept= 0,lty=4,col="grey",lwd=0.8) +
+  xlim(-3, 3)+
+  theme_classic()+
+  ggtitle(this_tile)+
+  theme(plot.title = element_text(size=12,hjust = 0.5),
+        legend.title = element_blank())
+p5
+ggsave('pheatmap3.tiff',units="in", 
+       width=5, height=4, 
+       dpi=300, compression = 'lzw')
+##this is so strange for alldiff3
+###################################################
+library(pheatmap)
+head(alldiff1)
+rownames(alldiff1)
+names(alldiff1)
+alldiff1.1 <- alldiff1$logFC
+names(alldiff1.1) <- rownames(alldiff1)
+head(alldiff1.1)
+cg1 <- c(names(head(sort(alldiff1.1),100)),
+         names(tail(sort(alldiff1.1),100)))
+data_plot[1:4,1:4]
+save(data_plot,file = 'data_plot.rda')
+
+head(exprSet)
+rownames(exprSet)
+#rows = genes, columns = samples
+n1 <- t(scale(t(exprSet[cg1,])))
+n1[n1>2]=2
+n1[n1< -2]= -2
+n1[1:4,1:4]
+summary(n1)
+n1 <- na.omit(n1)
+pheatmap(n1,show_colnames =F,
+         show_rownames = F)
+ac=data.frame(group=group.list)
+rownames(ac)=colnames(n1)
+
+p6 <- pheatmap(n1,show_colnames =F,
+               show_rownames = T,
+               cluster_cols = T, 
+               main = 'Distinct time for CLP',
+               annotation_col=ac) 
+p6
+#only have 10 genes left
+##let try for all the differential genes
+length(intersect(rownames(alldiff1),rownames(alldiff2)))
+#17095
+length(intersect(rownames(alldiff1),rownames(alldiff3)))
+#17095
+length(intersect(rownames(alldiff2),rownames(alldiff3)))
+#17095
